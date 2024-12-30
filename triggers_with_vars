@@ -1,0 +1,45 @@
+CREATE DEFINER=`root`@`localhost` TRIGGER `trigger_offer_bi` BEFORE INSERT ON `offer` FOR EACH ROW BEGIN
+	DECLARE var_owner_id INT;
+  DECLARE var_starts_at DATETIME;
+  DECLARE var_ends_at DATETIME;
+  DECLARE var_current_price DECIMAL(10,2);
+  DECLARE var_max_price DECIMAL(10, 2);
+    
+  SELECT 
+		  auth.auction.user_id,
+      auth.auction.starts_at,
+      auth.auction.ends_at,
+      auth.auction.starting_price
+	INTO 
+	    var_owner_id,
+      var_starts_at,
+      var_ends_at,
+      var_current_price
+	FROM
+	    auth.auction
+	WHERE
+	    auction.auction_id = NEW.auction_id;
+        
+	SET 
+      var_max_price = (
+			    SELECT MAX(offer.price)
+              FROM auth.offer
+              WHERE offer.auction_id = NEW.auction_id
+        );
+        
+	IF var_max_price IS NOT NULL THEN
+	    SET var_current_price = var_max_price;
+	END IF;
+    
+  IF var_current_price + 50 > NEW.price THEN
+	    SIGNAL SQLSTATE '50001' SET MESSAGE_TEXT = 'Each subsequent price must be at least 50 higher then the previous';
+	END IF;
+    
+  IF NOT NOW() BETWEEN var_starts_at AND var_ends_at THEN
+		  SIGNAL SQLSTATE '50002' SET MESSAGE_TEXT = 'The auction is not started yet or it has finished';
+  END IF;
+    
+  IF NEW.user_id = var_owner_id THEN 
+      SIGNAL SQLSTATE '50003' SET MESSAGE_TEXT = 'The owner cannot make a bid';
+	END IF;
+END
