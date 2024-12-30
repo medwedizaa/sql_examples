@@ -1,0 +1,6 @@
+Foreign key: "fk_<current table>_<referenced table>_id"
+Unique key: "uq_<table>_<column>"
+Triggers: "trigger_<table name>_bi" (where bi is "befoure update")
+Database - plural
+Table - singular
+Boolean: is_active TINYINT(1)
