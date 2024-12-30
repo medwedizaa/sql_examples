@@ -1,0 +1,13 @@
+CREATE DEFINER=`root`@`localhost` TRIGGER `trigger_auction_bu` BEFORE UPDATE ON `auction` FOR EACH ROW BEGIN
+	DECLARE var_offer_count INT;
+    
+  SET var_offer_count = (
+		SELECT COUNT(offer.offer_id)
+      FROM auth.offer
+      WHERE offer.auction_id = OLD.auction_id
+    );
+    
+  IF var_offer_count > 0 THEN 
+		SIGNAL SQLSTATE '50004' SET MESSAGE_TEXT = 'You cannot change the auction that has at leat one offer';
+	END IF;
+END
